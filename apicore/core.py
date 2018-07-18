@@ -10,26 +10,20 @@ def get_logger(info):
     logging.info(info)
 
 
-class Service:
-    def __init__(self, _buff_):
-        self._buff_ = _buff_
+class Service(object):
+    def __init__(self, buff=None, service=None, args=None):
+        self.__buff = buff
+        self.__service = service
+        self.__args = args
 
-    def __pipe_run(self):
-        return Popen([self.service, self.args], stdin=self._buff_, stdout=PIPE)
+    def __str__(self):
+        return self.__buff.read().decode()
 
-    def __read(self):
-        return self.__pipe_run().stdout.read().decode()
+    def pipe(self, st):
+        return Service(Popen([st.__service, st.__args], stdin=self.__buff, stdout=PIPE).stdout)
 
-    def __buff(self):
-        setattr(self, 'buff', self.__pipe_run().stdout)
-        return self
-
-    def pipe(self, set_pipe):
-        setattr(self, 'service', set_pipe['service'])
-        setattr(self, 'args', set_pipe['args'])
-        setattr(Service.pipe, 'read', self.__read())
-        setattr(Service.pipe, 'buff', self.__buff())
-        return self.pipe
+    def to_list(self):
+        return self.__str__()
 
 
 class Environment(object):
@@ -39,18 +33,12 @@ class Environment(object):
     def __run(self, args):
         return Popen([self._service, args], stdout=PIPE)
 
-    def __read(self):
-        return self.__run(self.args).stdout.read().decode()
-
     def __buff(self):
-        buff_ = self.__run(self.args).stdout
-        return Service(buff_)
+        return self.__run(self.args).stdout
 
     def run(self, args):
         setattr(self, 'args', args)
-        setattr(Environment.run, 'read', self.__read())
-        setattr(Environment.run, 'buff', self.__buff())
-        return self.run
+        return Service(self.__buff(), self._service, self.args)
 
 
 class EnvAPI(object):
@@ -75,9 +63,3 @@ class EnvAPI(object):
         if not self.__check_service():
             raise AttributeError
         return Environment(service)
-
-    def set_pipe(self, service, args):
-        setattr(self, '_service', service)
-        if not self.__check_service():
-            raise AttributeError
-        return {'service': service, 'args': args}
